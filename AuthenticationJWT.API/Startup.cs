@@ -7,6 +7,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using AuthenticationJWT.Core.Entities;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.DataProtection;
+using System.Text;
 
 namespace AuthenticationJWT.API
 {
@@ -26,7 +30,6 @@ namespace AuthenticationJWT.API
                 options.UseSqlServer(Configuration.GetConnectionString("Default")));
 
             #region Identity configuration
-            services.AddAuthentication();
             var builder = services.AddIdentityCore<User>(options =>
             {
                 // Make these settings sercure enough!
@@ -41,6 +44,29 @@ namespace AuthenticationJWT.API
             builder = new IdentityBuilder(builder.UserType, typeof(IdentityRole), builder.Services);
             builder.AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
+
+            // Configure authentication using JWT Bearer Tokens.
+            var jwtSettings = Configuration.GetSection("JwtSettings");
+            var secretKey = Configuration.GetSection("SecretKey").Value;
+
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(opts =>
+            {
+                opts.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+
+                    ValidIssuer = jwtSettings.GetSection("ValidIssuer").Value,
+                    ValidAudience = jwtSettings.GetSection("ValidAudience").Value,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
+                };
+            });
             #endregion
 
             services.AddControllers();
