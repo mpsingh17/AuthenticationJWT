@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AuthenticationJWT.API.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "Manager")]
     [ApiController]
     [Route("[controller]")]
     public class WeatherForecastController : ControllerBase
