@@ -70,6 +70,9 @@ namespace AuthenticationJWT.API
             #endregion
 
             services.AddControllers();
+
+            // Register Application Services
+            services.AddScoped<IAuthenticationManager, AuthenticationManager>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

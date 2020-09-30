@@ -15,10 +15,12 @@ namespace AuthenticationJWT.API.Controllers
     public class AccountController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
+        private readonly IAuthenticationManager _authenticationManager;
 
-        public AccountController(UserManager<User> userManager)
+        public AccountController(UserManager<User> userManager, IAuthenticationManager authenticationManager)
         {
             _userManager = userManager;
+            _authenticationManager = authenticationManager;
         }
 
         [HttpPost]
@@ -50,6 +52,20 @@ namespace AuthenticationJWT.API.Controllers
             await _userManager.AddToRolesAsync(user, input.Roles);
 
             return StatusCode(201);
+        }
+
+        [HttpPost("authenticate")]
+        public async Task<IActionResult> Authenticate(UserForAuthenticationDto userForAuthenticationDto)
+        {
+            if (!await _authenticationManager.ValidateUser(userForAuthenticationDto))
+            {
+                // Log the invalid login attempt.
+                return Unauthorized();
+            }
+
+            var jwtToken = await _authenticationManager.CreateTokenAsync();
+
+            return Ok(new { jwtToken });
         }
     }
 }
