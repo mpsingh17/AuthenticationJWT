@@ -63,9 +63,42 @@ namespace AuthenticationJWT.API.Controllers
                 return Unauthorized();
             }
 
-            var jwtToken = await _authenticationManager.CreateTokenAsync();
+            var authenticationModel = await _authenticationManager.CreateTokenAsync();
 
-            return Ok(new { jwtToken });
+            if (!string.IsNullOrEmpty(authenticationModel.RefreshToken))
+            {
+                SetRefreshTokenInCookie(authenticationModel.RefreshToken, authenticationModel.RefreshTokenExpiration);
+            }
+
+            return Ok(new { authenticationModel.JwtToken });
+        }
+
+        [HttpPost("refresh-token")]
+        public async Task<IActionResult> RefreshToken()
+        {
+            var refreshToken = Request.Cookies["refreshToken"];
+
+            if (!await _authenticationManager.ValidateRefreshToken(refreshToken))
+                // Log bad request. Refresh token is not valid.
+                return BadRequest("Invalid refresh token");
+
+            var authenticationModel = await _authenticationManager.RefreshTokenAsync(refreshToken);
+
+            if (!string.IsNullOrEmpty(authenticationModel.RefreshToken))
+                SetRefreshTokenInCookie(authenticationModel.RefreshToken, authenticationModel.RefreshTokenExpiration);
+            
+            return Ok(authenticationModel);
+        }
+
+        private void SetRefreshTokenInCookie(string refreshToken, DateTime expire)
+        {
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Expires = expire
+            };
+
+            Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
         }
     }
 }

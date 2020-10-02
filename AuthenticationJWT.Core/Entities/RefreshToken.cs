@@ -10,7 +10,7 @@ namespace AuthenticationJWT.Core.Entities
     {
         public string Token { get; set; }
         public DateTime Expires { get; set; }
-        public bool IsExpired => DateTime.UtcNow >= Expires;
+        public bool IsExpired => DateTime.Now >= Expires;
         public DateTime Created { get; set; }
         public DateTime? Revoked { get; set; }
         public bool IsActive => Revoked == null && !IsExpired;
